@@ -1,0 +1,1558 @@
+{
+  "datasets": [
+    {
+      "name": "febeaa20",
+      "displayName": "Total businesses",
+      "queryLines": [
+        "SELECT \r\n",
+        "    COUNT(DISTINCT business_id) as total_businesses,\r\n",
+        "    'Total Businesses' as metric_name\r\n",
+        "FROM workspace.default.silverbusiness1\r\n",
+        "WHERE is_open = 1"
+      ]
+    },
+    {
+      "name": "8837fca6",
+      "displayName": "Number of reviews",
+      "queryLines": [
+        "SELECT COUNT(*)  as total\r\n",
+        "FROM workspace.default.silverreview1 \r\n"
+      ]
+    },
+    {
+      "name": "283111cc",
+      "displayName": "average stars",
+      "queryLines": [
+        "SELECT\r\n",
+        "  AVG(stars) as average_stars\r\n",
+        "FROM\r\n",
+        "  workspace.default.silverreview1"
+      ]
+    },
+    {
+      "name": "0762f41e",
+      "displayName": "Users",
+      "queryLines": [
+        "SELECT \r\n",
+        "    COUNT(DISTINCT user_id) as active_users,\r\n",
+        "    'Active Users' as metric_name\r\n",
+        "FROM workspace.default.silveruser\r\n",
+        "WHERE review_count > 0"
+      ]
+    },
+    {
+      "name": "1a0e0727",
+      "displayName": "Rating distribution",
+      "queryLines": [
+        "SELECT \r\n",
+        "    CASE \r\n",
+        "        WHEN stars >= 4.5 THEN '4.5-5.0 ⭐⭐⭐⭐⭐'\r\n",
+        "        WHEN stars >= 4.0 THEN '4.0-4.4 ⭐⭐⭐⭐'\r\n",
+        "        WHEN stars >= 3.0 THEN '3.0-3.9 ⭐⭐⭐'\r\n",
+        "        WHEN stars >= 2.0 THEN '2.0-2.9 ⭐⭐'\r\n",
+        "        ELSE '1.0-1.9 ⭐'\r\n",
+        "    END as rating_range,\r\n",
+        "    COUNT(*) as business_count,\r\n",
+        "    ROUND(COUNT(*) * 100.0 / SUM(COUNT(*)) OVER (), 2) as percentage\r\n",
+        "FROM workspace.default.silverbusiness1\r\n",
+        "WHERE is_open = 1\r\n",
+        "GROUP BY rating_range\r\n",
+        "ORDER BY rating_range DESC"
+      ]
+    },
+    {
+      "name": "9f7caae9",
+      "displayName": "User Segmentation by Review Activity",
+      "queryLines": [
+        "-- User Segmentation by Review Activity\r\n",
+        "SELECT \r\n",
+        "    CASE \r\n",
+        "        WHEN review_count >= 100 THEN 'Power Users (100+)'\r\n",
+        "        WHEN review_count >= 50 THEN 'Active Users (50-99)'\r\n",
+        "        WHEN review_count >= 10 THEN 'Regular Users (10-49)'\r\n",
+        "        WHEN review_count >= 1 THEN 'Casual Users (1-9)'\r\n",
+        "        ELSE 'Inactive'\r\n",
+        "    END as user_segment,\r\n",
+        "    COUNT(*) as user_count,\r\n",
+        "    ROUND(COUNT(*) * 100.0 / SUM(COUNT(*)) OVER (), 1) as percentage\r\n",
+        "FROM workspace.default.silveruser\r\n",
+        "GROUP BY user_segment\r\n",
+        "ORDER BY \r\n",
+        "    CASE user_segment\r\n",
+        "        WHEN 'Power Users (100+)' THEN 1\r\n",
+        "        WHEN 'Active Users (50-99)' THEN 2\r\n",
+        "        WHEN 'Regular Users (10-49)' THEN 3\r\n",
+        "        WHEN 'Casual Users (1-9)' THEN 4\r\n",
+        "        ELSE 5\r\n",
+        "    END"
+      ]
+    },
+    {
+      "name": "cf6aee4e",
+      "displayName": "Top Business Categories",
+      "queryLines": [
+        "SELECT count(*) as count, category FROM \r\n",
+        "\r\n",
+        "(SELECT \r\n",
+        "    business_id,\r\n",
+        "    name,\r\n",
+        "    TRIM(category) AS category\r\n",
+        "FROM workspace.default.goldbusiness_analytics \r\n",
+        "LATERAL VIEW EXPLODE(SPLIT(categories, ',')) AS category ) \r\n",
+        "GROUP BY category\r\n",
+        "ORDER BY count DESC\r\n",
+        "LIMIT(10)"
+      ]
+    },
+    {
+      "name": "9ca65d02",
+      "displayName": "TOP STATES WITH 5STARS",
+      "queryLines": [
+        "SELECT CONCAT('US-', state) AS subdivision_code,\r\n",
+        "        state,\r\n",
+        "        count(*)\r\n",
+        "FROM workspace.default.silverbusiness1\r\n",
+        "WHere stars = 5 AND is_open = 1\r\n",
+        "GRoup by state"
+      ]
+    },
+    {
+      "name": "a0fe0c41",
+      "displayName": "Yelp User Types and Ratings Summary",
+      "queryLines": [
+        "SELECT\r\n",
+        "    CASE\r\n",
+        "        WHEN review_count < 10 THEN 'Casual'\r\n",
+        "        WHEN review_count BETWEEN 10 AND 50 THEN 'Regular'\r\n",
+        "        ELSE 'Power User'\r\n",
+        "    END AS user_type,\r\n",
+        "    COUNT(*) AS num_users,\r\n",
+        "    AVG(average_stars) AS avg_rating_given\r\n",
+        "FROM \r\n",
+        "    workspace.default.bronzeuser\r\n",
+        "GROUP BY \r\n",
+        "    user_type;"
+      ]
+    },
+    {
+      "name": "f23b54e1",
+      "displayName": "Number of Elite Users",
+      "queryLines": [
+        "-- Elite Users Growth Over Time\r\n",
+        "SELECT \r\n",
+        "    elite_year,\r\n",
+        "    COUNT(DISTINCT user_id) as elite_users,\r\n",
+        "    AVG(review_count) as avg_reviews_per_user,\r\n",
+        "    SUM(review_count) as total_reviews\r\n",
+        "FROM (\r\n",
+        "    SELECT \r\n",
+        "        user_id,\r\n",
+        "        review_count,\r\n",
+        "        EXPLODE(SPLIT(elite, ',')) as elite_year\r\n",
+        "    FROM workspace.default.bronzeuser\r\n",
+        "    WHERE elite IS NOT NULL AND elite != ''\r\n",
+        ")\r\n",
+        "WHERE elite_year BETWEEN '2015' AND '2024'\r\n",
+        "GROUP BY elite_year\r\n",
+        "ORDER BY elite_year"
+      ]
+    },
+    {
+      "name": "f2268290",
+      "displayName": "Reviews Over Time (Time Series)",
+      "queryLines": [
+        "SELECT \r\n",
+        "    DATE_TRUNC('month', date) as review_month,\r\n",
+        "    COUNT(*) as review_count,\r\n",
+        "    AVG(stars) as avg_rating,\r\n",
+        "    COUNT(DISTINCT user_id) as unique_reviewers\r\n",
+        "FROM workspace.default.silverreview1\r\n",
+        "WHERE date <= ADD_MONTHS(CURRENT_DATE(), -24) \r\n",
+        "GROUP BY review_month\r\n",
+        "ORDER BY review_month"
+      ]
+    },
+    {
+      "name": "f5152148",
+      "displayName": "Monthly Review Interval and User Engagement Trends",
+      "queryLines": [
+        "-- Average Time Between Reviews (User Activity Frequency)\r\n",
+        "WITH review_gaps AS (\r\n",
+        "    SELECT \r\n",
+        "        user_id,\r\n",
+        "        date,\r\n",
+        "        LAG(date) OVER (PARTITION BY user_id ORDER BY date) as prev_review_date,\r\n",
+        "        DATEDIFF(date, LAG(date) OVER (PARTITION BY user_id ORDER BY date)) as days_between_reviews\r\n",
+        "    FROM workspace.default.silverreview1\r\n",
+        ")\r\n",
+        "SELECT \r\n",
+        "    DATE_TRUNC('month', date) as month,\r\n",
+        "    AVG(days_between_reviews) as avg_days_between_reviews,\r\n",
+        "    PERCENTILE(days_between_reviews, 0.5) as median_days_between_reviews,\r\n",
+        "    COUNT(DISTINCT user_id) as active_users\r\n",
+        "FROM review_gaps\r\n",
+        "WHERE days_between_reviews IS NOT NULL\r\n",
+        "    AND date <= ADD_MONTHS(CURRENT_DATE(), -24)\r\n",
+        "GROUP BY month\r\n",
+        "ORDER BY month"
+      ]
+    },
+    {
+      "name": "7e5fb9b9",
+      "displayName": "User Influence Analysis",
+      "queryLines": [
+        "SELECT \r\n",
+        "    user_id,\r\n",
+        "    name,\r\n",
+        "    review_count,\r\n",
+        "    user_useful as total_useful_votes,\r\n",
+        "    user_funny as total_funny_votes,\r\n",
+        "    user_cool as total_cool_votes,\r\n",
+        "    COALESCE(ARRAY_SIZE(SPLIT(elite, ',')), 0) as years_elite,\r\n",
+        "    average_stars\r\n",
+        "FROM workspace.default.gold_review_master1\r\n",
+        "WHERE review_count >= 100\r\n",
+        "ORDER BY total_useful_votes DESC\r\n",
+        "LIMIT 100"
+      ]
+    },
+    {
+      "name": "14c55c10",
+      "displayName": "filter_business_names",
+      "queryLines": [
+        "SELECT DISTINCT \r\n",
+        "    business_id,\r\n",
+        "    name as business_name,\r\n",
+        "    city,\r\n",
+        "    state,\r\n",
+        "    stars,\r\n",
+        "    review_count\r\n",
+        "FROM workspace.default.gold_review_master1\r\n",
+        "WHERE is_open = 1\r\n",
+        "  AND review_count >= 10  -- Only show businesses with at least 10 reviews\r\n",
+        "ORDER BY business_name"
+      ]
+    },
+    {
+      "name": "3dc0083e",
+      "displayName": "Monthly Review Patterns for Selected Businesses",
+      "queryLines": [
+        "-- With business filter for historical data\r\n",
+        "WITH review_data AS (\r\n",
+        "    SELECT \r\n",
+        "        r.user_id,\r\n",
+        "        r.date,\r\n",
+        "        r.stars,\r\n",
+        "        r.business_id,\r\n",
+        "        DATE_TRUNC('month', r.date) as review_month,\r\n",
+        "        LAG(r.date) OVER (PARTITION BY r.user_id ORDER BY r.date) as prev_review_date,\r\n",
+        "        DATEDIFF(r.date, LAG(r.date) OVER (PARTITION BY r.user_id ORDER BY r.date)) as days_between_reviews\r\n",
+        "    FROM workspace.default.silverreview1 r\r\n",
+        "    WHERE 1=1\r\n",
+        "        -- Optional: Filter to specific years\r\n",
+        "        AND YEAR(r.date) BETWEEN 2018 AND 2022\r\n",
+        "        -- Business filter\r\n",
+        "        AND (\r\n",
+        "            :business_name  IS NULL\r\n",
+        "            OR :business_name  = 'All Businesses'\r\n",
+        "            OR :business_name  = ''\r\n",
+        "            OR EXISTS (\r\n",
+        "                SELECT 1 \r\n",
+        "                FROM workspace.default.silverbusiness1 b\r\n",
+        "                WHERE b.business_id = r.business_id \r\n",
+        "                  AND b.name = :business_name \r\n",
+        "            )\r\n",
+        "        )\r\n",
+        ")\r\n",
+        "SELECT \r\n",
+        "    review_month,\r\n",
+        "    COUNT(*) as review_count,\r\n",
+        "    COUNT(DISTINCT user_id) as unique_reviewers,\r\n",
+        "    ROUND(AVG(stars), 2) as avg_rating,\r\n",
+        "    ROUND(AVG(CASE WHEN days_between_reviews IS NOT NULL THEN days_between_reviews END), 1) as avg_days_between_reviews,\r\n",
+        "    ROUND(PERCENTILE_APPROX(CASE WHEN days_between_reviews IS NOT NULL THEN days_between_reviews END, 0.5), 0) as median_days_between_reviews,\r\n",
+        "    COUNT(DISTINCT CASE WHEN days_between_reviews IS NOT NULL THEN user_id END) as active_users\r\n",
+        "FROM review_data\r\n",
+        "GROUP BY review_month\r\n",
+        "ORDER BY review_month"
+      ],
+      "parameters": [
+        {
+          "displayName": "business_name",
+          "keyword": "business_name",
+          "dataType": "STRING",
+          "defaultSelection": {
+            "values": {
+              "dataType": "STRING",
+              "values": [
+                {
+                  "value": "All Businesses"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "name": "102a760d",
+      "displayName": "Business Data",
+      "layout": [
+        {
+          "widget": {
+            "name": "fe65bf0f",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "cf6aee4e",
+                  "fields": [
+                    {
+                      "name": "category",
+                      "expression": "`category`"
+                    },
+                    {
+                      "name": "count",
+                      "expression": "`count`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "showTitle": true,
+                "title": "Top Business Categories",
+                "headerAlignment": "center"
+              },
+              "mark": {
+                "colors": [
+                  {
+                    "themeColorType": "selectionColor"
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 2
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 3
+                  }
+                ]
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "category",
+                  "displayName": "Category",
+                  "scale": {
+                    "type": "categorical",
+                    "sort": {
+                      "by": "y-reversed"
+                    }
+                  }
+                },
+                "y": {
+                  "fieldName": "count",
+                  "format": {
+                    "type": "number-plain",
+                    "abbreviation": "compact",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 2
+                    }
+                  },
+                  "displayName": "Number",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 7,
+            "width": 3,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "4afddc34",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "9ca65d02",
+                  "fields": [
+                    {
+                      "name": "subdivision_code",
+                      "expression": "`subdivision_code`"
+                    }
+                  ],
+                  "filters": [
+                    {
+                      "expression": "IN_RANGE(`count(1)`, 1030, NULL)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 1,
+              "frame": {
+                "showDescription": true,
+                "description": "Top States with 5-STAR Ratings",
+                "headerAlignment": "center"
+              },
+              "widgetType": "choropleth-map",
+              "encodings": {
+                "region": {
+                  "regionType": "mapbox-v4-admin",
+                  "admin0": {
+                    "type": "value",
+                    "value": "United States",
+                    "geographicRole": "admin0-name"
+                  },
+                  "admin1": {
+                    "fieldName": "subdivision_code",
+                    "type": "field",
+                    "geographicRole": "admin1-iso-3166-2"
+                  }
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 2,
+            "width": 6,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "total-number-active-businesses",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "febeaa20",
+                  "fields": [
+                    {
+                      "name": "total_businesses",
+                      "expression": "`total_businesses`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": "Total Active Businesses",
+                "headerAlignment": "center"
+              },
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "total_businesses",
+                  "rowNumber": -1
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "total-number-of-reviews",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "8837fca6",
+                  "fields": [
+                    {
+                      "name": "sum(total)",
+                      "expression": "SUM(`total`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": "Total Number of Reviews",
+                "headerAlignment": "center"
+              },
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "sum(total)"
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 2,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "3d3bd125",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "283111cc",
+                  "fields": [
+                    {
+                      "name": "sum(average_stars)",
+                      "expression": "SUM(`average_stars`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": "Average Reviews ⭐",
+                "headerAlignment": "center"
+              },
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "sum(average_stars)"
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 4,
+            "y": 0,
+            "width": 1,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "c9889fb1",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "0762f41e",
+                  "fields": [
+                    {
+                      "name": "active_users",
+                      "expression": "`active_users`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": "Total Users ",
+                "headerAlignment": "center"
+              },
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "active_users",
+                  "format": {
+                    "type": "number-plain",
+                    "abbreviation": "compact",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 2
+                    },
+                    "hideGroupSeparator": false
+                  }
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 5,
+            "y": 0,
+            "width": 1,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "review-distribution",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "1a0e0727",
+                  "fields": [
+                    {
+                      "name": "rating_range",
+                      "expression": "`rating_range`"
+                    },
+                    {
+                      "name": "business_count",
+                      "expression": "`business_count`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "showDescription": false,
+                "showTitle": true,
+                "title": "Business Reviews Distribution ",
+                "headerAlignment": "center"
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "rating_range",
+                  "axis": {
+                    "hideLabels": false,
+                    "hideTitle": true
+                  },
+                  "scale": {
+                    "type": "categorical",
+                    "sort": {
+                      "by": "natural-order-reversed"
+                    }
+                  }
+                },
+                "y": {
+                  "fieldName": "business_count",
+                  "displayName": "Count",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "label": {
+                  "show": false
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 3,
+            "y": 7,
+            "width": 3,
+            "height": 6
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS"
+    },
+    {
+      "name": "00a9d1f7",
+      "displayName": "Global Filters",
+      "layout": [
+        {
+          "widget": {
+            "name": "4108c1d5",
+            "queries": [
+              {
+                "name": "dashboards/01f104280df316ed8fd7acf0ab0c431a/datasets/01f1053e9e2d127bb6b4143dd9b8eeb3_business_name",
+                "query": {
+                  "datasetName": "14c55c10",
+                  "fields": [
+                    {
+                      "name": "business_name",
+                      "expression": "`business_name`"
+                    },
+                    {
+                      "name": "business_name_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              },
+              {
+                "name": "parameter_dashboards/01f104280df316ed8fd7acf0ab0c431a/datasets/01f10597998613d49b088695208642d2_business_name",
+                "query": {
+                  "datasetName": "3dc0083e",
+                  "parameters": [
+                    {
+                      "name": "business_name",
+                      "keyword": "business_name"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true
+              },
+              "selection": {
+                "defaultSelection": {
+                  "values": {
+                    "dataType": "STRING",
+                    "values": [
+                      {
+                        "value": "All Businesses"
+                      }
+                    ]
+                  }
+                }
+              },
+              "widgetType": "filter-single-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "parameterName": "business_name",
+                    "queryName": "parameter_dashboards/01f104280df316ed8fd7acf0ab0c431a/datasets/01f10597998613d49b088695208642d2_business_name"
+                  },
+                  {
+                    "fieldName": "business_name",
+                    "queryName": "dashboards/01f104280df316ed8fd7acf0ab0c431a/datasets/01f1053e9e2d127bb6b4143dd9b8eeb3_business_name"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 6,
+            "width": 1,
+            "height": 2
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_GLOBAL_FILTERS"
+    },
+    {
+      "name": "3bde9b56",
+      "displayName": "Reviews",
+      "layout": [
+        {
+          "widget": {
+            "name": "reviews-over-time",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "3dc0083e",
+                  "fields": [
+                    {
+                      "name": "monthly(review_month)",
+                      "expression": "DATE_TRUNC(\"MONTH\", `review_month`)"
+                    },
+                    {
+                      "name": "review_count",
+                      "expression": "`review_count`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 1,
+              "frame": {
+                "showTitle": true,
+                "title": "Reviews Over Time",
+                "headerAlignment": "center"
+              },
+              "widgetType": "combo",
+              "encodings": {
+                "x": {
+                  "fieldName": "monthly(review_month)",
+                  "format": {
+                    "type": "date-time",
+                    "date": "year-month-day",
+                    "time": "locale-hour-minute",
+                    "leadingZeros": false
+                  },
+                  "scale": {
+                    "type": "temporal"
+                  }
+                },
+                "y": {
+                  "primary": {
+                    "fields": []
+                  },
+                  "secondary": {
+                    "fields": [
+                      {
+                        "fieldName": "review_count"
+                      }
+                    ]
+                  },
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 2,
+            "width": 6,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "bd397fce",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "3dc0083e",
+                  "fields": [
+                    {
+                      "name": "sum(review_count)",
+                      "expression": "SUM(`review_count`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": "Total Number of Reviews",
+                "headerAlignment": "center"
+              },
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "sum(review_count)"
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "c7f95306",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "3dc0083e",
+                  "fields": [
+                    {
+                      "name": "avg(avg_rating)",
+                      "expression": "AVG(`avg_rating`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": "Average Reviews ⭐",
+                "headerAlignment": "center"
+              },
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "avg(avg_rating)"
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 2,
+            "y": 0,
+            "width": 1,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "average-days-between-reviews",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "3dc0083e",
+                  "fields": [
+                    {
+                      "name": "review_month",
+                      "expression": "`review_month`"
+                    },
+                    {
+                      "name": "avg_days_between_reviews",
+                      "expression": "`avg_days_between_reviews`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "showTitle": true,
+                "title": "Average Days Between Reviews",
+                "headerAlignment": "center"
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "review_month",
+                  "axis": {
+                    "hideTitle": true
+                  },
+                  "scale": {
+                    "type": "temporal"
+                  }
+                },
+                "y": {
+                  "fieldName": "avg_days_between_reviews",
+                  "displayName": "Average Days between Reviews",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 8,
+            "width": 2,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "yearly-average-rating",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "3dc0083e",
+                  "fields": [
+                    {
+                      "name": "yearly(review_month)",
+                      "expression": "DATE_TRUNC(\"YEAR\", `review_month`)"
+                    },
+                    {
+                      "name": "avg(avg_rating)",
+                      "expression": "AVG(`avg_rating`)"
+                    }
+                  ],
+                  "parameterValues": [
+                    {
+                      "keyword": "business_name",
+                      "selection": {}
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "showTitle": true,
+                "title": "Yearly Average Rating",
+                "headerAlignment": "center"
+              },
+              "mark": {
+                "colors": [
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 4
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 2
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 3
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 4
+                  }
+                ]
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "yearly(review_month)",
+                  "axis": {
+                    "hideTitle": true
+                  },
+                  "scale": {
+                    "type": "temporal"
+                  }
+                },
+                "y": {
+                  "fieldName": "avg(avg_rating)",
+                  "format": {
+                    "type": "number-plain",
+                    "abbreviation": "none",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 2
+                    },
+                    "significantFigures": {
+                      "type": "all"
+                    }
+                  },
+                  "axis": {
+                    "title": "Average Rating",
+                    "hideLabels": true,
+                    "hideGrid": false,
+                    "labelAngle": 0,
+                    "hideTitle": true
+                  },
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "label": {
+                  "show": true
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 2,
+            "y": 8,
+            "width": 1,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "number-of-uniquer-reviewers",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "3dc0083e",
+                  "fields": [
+                    {
+                      "name": "monthly(review_month)",
+                      "expression": "DATE_TRUNC(\"MONTH\", `review_month`)"
+                    },
+                    {
+                      "name": "unique_reviewers",
+                      "expression": "`unique_reviewers`"
+                    }
+                  ],
+                  "parameterValues": [
+                    {
+                      "keyword": "business_name",
+                      "selection": {}
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "showTitle": true,
+                "title": "Number of Uniquer Reviewers ",
+                "headerAlignment": "center"
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "monthly(review_month)",
+                  "axis": {
+                    "hideTitle": true
+                  },
+                  "scale": {
+                    "type": "temporal"
+                  }
+                },
+                "y": {
+                  "fieldName": "unique_reviewers",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 3,
+            "y": 8,
+            "width": 3,
+            "height": 6
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS"
+    },
+    {
+      "name": "5009534b",
+      "displayName": "Users",
+      "layout": [
+        {
+          "widget": {
+            "name": "421c130a",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "9f7caae9",
+                  "fields": [
+                    {
+                      "name": "user_count",
+                      "expression": "`user_count`"
+                    },
+                    {
+                      "name": "user_segment",
+                      "expression": "`user_segment`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "pie",
+              "encodings": {
+                "angle": {
+                  "fieldName": "user_count",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "User Distribution"
+                },
+                "color": {
+                  "fieldName": "user_segment",
+                  "legend": {
+                    "hideTitle": true
+                  },
+                  "scale": {
+                    "type": "categorical",
+                    "mappings": [
+                      {
+                        "value": "Power Users (100+)",
+                        "color": "#044B61"
+                      }
+                    ],
+                    "sort": {
+                      "by": "angle"
+                    }
+                  }
+                },
+                "label": {
+                  "show": true
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 1,
+            "y": 0,
+            "width": 2,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "ce35fe87",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "0762f41e",
+                  "fields": [
+                    {
+                      "name": "active_users",
+                      "expression": "`active_users`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": "Total Users ",
+                "headerAlignment": "center"
+              },
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "active_users",
+                  "format": {
+                    "type": "number-plain",
+                    "abbreviation": "compact",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 2
+                    },
+                    "hideGroupSeparator": false
+                  }
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 1,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "total-reviews-average",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "f23b54e1",
+                  "fields": [
+                    {
+                      "name": "elite_year",
+                      "expression": "`elite_year`"
+                    },
+                    {
+                      "name": "avg_reviews_per_user",
+                      "expression": "`avg_reviews_per_user`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 1,
+              "frame": {
+                "showTitle": true,
+                "title": "Total Reviews & Average per user\n ",
+                "headerAlignment": "center"
+              },
+              "mark": {
+                "colors": [
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 4
+                  }
+                ]
+              },
+              "widgetType": "combo",
+              "encodings": {
+                "x": {
+                  "fieldName": "elite_year",
+                  "axis": {
+                    "labelAngle": 0
+                  },
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "primary": {
+                    "fields": []
+                  },
+                  "secondary": {
+                    "fields": [
+                      {
+                        "fieldName": "avg_reviews_per_user"
+                      }
+                    ]
+                  },
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "axis": {
+                    "hideTitle": true
+                  }
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 3,
+            "y": 0,
+            "width": 3,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "number-of-elite-users",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "f23b54e1",
+                  "fields": [
+                    {
+                      "name": "elite_year",
+                      "expression": "`elite_year`"
+                    },
+                    {
+                      "name": "elite_users",
+                      "expression": "`elite_users`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "showTitle": true,
+                "title": "Number of Elite Users ",
+                "headerAlignment": "center"
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "elite_year",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "elite_users",
+                  "scale": {
+                    "type": "quantitative",
+                    "domain": {
+                      "max": 50000
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 6,
+            "width": 3,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "top-reviewers",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "7e5fb9b9",
+                  "fields": [
+                    {
+                      "name": "name",
+                      "expression": "`name`"
+                    },
+                    {
+                      "name": "review_count",
+                      "expression": "`review_count`"
+                    }
+                  ],
+                  "filters": [
+                    {
+                      "expression": "IN_RANGE(`review_count`, 5800, NULL)"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "showTitle": true,
+                "title": "Top Reviewers",
+                "headerAlignment": "center"
+              },
+              "mark": {
+                "colors": [
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 2
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 2
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 3
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 4
+                  }
+                ]
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "name",
+                  "scale": {
+                    "type": "categorical",
+                    "sort": {
+                      "by": "y-reversed"
+                    }
+                  }
+                },
+                "y": {
+                  "fieldName": "review_count",
+                  "axis": {
+                    "hideTitle": true,
+                    "labelAngle": 0
+                  },
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 3,
+            "y": 6,
+            "width": 3,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "2068b585",
+            "multilineTextboxSpec": {
+              "lines": [
+                "**Elite :** high-impact users recognized for their platform loyalty and high-quality contributions "
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 12,
+            "width": 3,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "elite-users1",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "f23b54e1",
+                  "fields": [
+                    {
+                      "name": "sum(elite_users)",
+                      "expression": "SUM(`elite_users`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": "Elite Users ",
+                "headerAlignment": "center"
+              },
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "sum(elite_users)"
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 3,
+            "width": 1,
+            "height": 3
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS"
+    }
+  ],
+  "uiSettings": {
+    "theme": {
+      "canvasBackgroundColor": {
+        "light": "#FAFAFB",
+        "dark": "#1F272D"
+      },
+      "widgetBackgroundColor": {
+        "light": "#FFFFFF",
+        "dark": "#11171C"
+      },
+      "fontColor": {
+        "light": "#11171C",
+        "dark": "#E8ECF0"
+      },
+      "selectionColor": {
+        "light": "#CA8F63",
+        "dark": "#8ACAFF"
+      },
+      "visualizationColors": [
+        "#077A9D",
+        "#8BCAE7",
+        "#636363",
+        "#4B829C"
+      ],
+      "widgetHeaderAlignment": "RIGHT",
+      "fontFamily": "Tahoma"
+    },
+    "applyModeEnabled": false
+  }
+}
